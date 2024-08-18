@@ -1,0 +1,130 @@
+---
+title: "Warm up_analysis"
+output: html_notebook
+---
+
+This is an [R Markdown](http://rmarkdown.rstudio.com) Notebook. When you execute code within the notebook, the results appear beneath the code. 
+
+Try executing this chunk by clicking the *Run* button within the chunk or by placing your cursor inside it and pressing *Cmd+Shift+Enter*. 
+
+# (a) 記述統計
+## 1.  「(d) Master Dataの作成」で作成したデータの、各列に含まれるNAの数
+```{r}
+colSums(is.na(master_data))
+```
+
+intermediateデータでも確認
+```{r}
+master <- read.csv("/Users/kg/Desktop/RA Boot Camp/warmup training package/01_data/intermediate/master.csv")
+colSums(is.na(master))
+```
+## 2. 問題背景などを知る上で役に立つ記述統計
+
+```{r}
+mean_master <- colMeans(master[ , c(9, 15:19, 21)], na.rm = TRUE)
+format(mean_master, digits = 2, nsmall=2, scientific = F)
+```
+```{r}
+master_df <- data.frame(Col1 = mean_master)
+format(master_df, digits = 2, nsmall = 2, scientific = F)
+```
+
+
+```{r}
+sd_master <- apply(master[ , c(9, 15:19, 21)], 2, sd, na.rm = TRUE)
+format(sd_master, digits = 2, nsmall = 2, scientific = F)
+```
+```{r}
+master_df <- data.frame(Col1 = mean_master, Col2 = sd_master)
+format(master_df, digits = 2, nsmall = 2, scientific = F)
+```
+
+```{r}
+nev_switch <- subset(master, after == 0)
+nev_switch
+```
+
+```{r}
+mean_nev_switch <- colMeans(nev_switch[ , c(9, 15:19, 21)], na.rm = TRUE)
+mean_nev_switch
+```
+```{r}
+sd_nev_switch <- apply(nev_switch[ , c(9, 15:19, 21)], 2, sd, na.rm = TRUE)
+sd_nev_switch
+```
+```{r}
+switch <- subset(master, after == 1)
+switch
+```
+```{r}
+mean_switch <- colMeans(switch[ , c(9, 15:19, 21)], na.rm = TRUE)
+mean_switch
+```
+
+
+```{r}
+sd_switch <- apply(switch[ , c(9, 15:19, 21)], 2, sd, na.rm = TRUE)
+sd_switch
+```
+
+
+```{r}
+master_df <- data.frame(Col1 = mean_master, Col2 = sd_master, Col3 = mean_nev_switch, Col4 = sd_nev_switch, Col5 = mean_switch, Col6 = sd_switch)
+format(master_df, digits = 2, nsmall = 2, scientific = F)
+colnames(master_df) <- c("All mean", "All sd", "Nev_switch mean", "Nev_switch sd", "Switch mean", "Switch sd")
+master_df
+```
+
+
+## 3. 4年卒業率の平均推移
+
+```{r}
+mean_gradrate4yr <- aggregate(master$gradrate4yr, list(master$year), mean)
+colnames(mean_gradrate4yr) <- c("year", "x")
+mean_gradrate4yr
+```
+
+```{r}
+plot(mean_gradrate4yr, type ="l", xlab = "year", ylab = "Four-Year Graduation Rates")
+title("Fraction of Four-Year Graduation Rates")
+```
+
+## 4.  semester導入率を計算
+```{r}
+mean_semester <- aggregate(master$semester, list(master$year), mean, na.rm = TRUE)
+colnames(mean_semester) <- c("year", "x")
+mean_semester
+```
+
+```{r}
+plot(mean_semester, type = "l", xlab = "year", ylab = "Fraction of Schools on Semesters")
+title("Fraction of Schools on Semesters")
+```
+
+念の為重ねた図も。
+```{r}
+plot(mean_gradrate4yr, type ="l", xlab = "year", ylab = "Four-Year Graduation Rates")
+par(new = TRUE)
+plot(mean_semester, type = "l", lty = 2, xaxt = "n", yaxt = "n")
+axis(side=4)
+mtext("Fraction of Schools on Semesters", side=4)
+title("Fraction of Schools on Semesters and Four-Year Graduation Rates")
+```
+
+## 5. 女子学生比率・白人学生割合・学費(instatetuition)を横軸、「4年卒業率」を縦軸にとった散布図を作成
+よくわかりませんでした。
+
+```{r}
+install.packages("rlang")
+library(rlang)
+```
+
+
+
+# (b) 回帰分析
+
+```{r}
+lm <- lm(master$year ~ master$after)
+summary(lm)
+```
+

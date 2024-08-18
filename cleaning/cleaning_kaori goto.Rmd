@@ -149,10 +149,17 @@ covariates$unitid <- gsub("aaaa","",as.character(covariates$unitid))
 covariates
 ```
 ## 4. ‘category’列に含まれる’instatetuition’, ‘costs’, ’faculty’, ’white_cohortsize’を別の列として追加
+```{r}
+install.packages("tidyr")
+```
+```{r}
+library(tidyr)
+```
+
 
 ```{r}
-covariates2 <- spread(covariates, key = "category", value = "value")
-covariates2
+covariates %>% pivot_wider(names_from = category, values_from = value)
+covariates
 ```
 
 ## 5. outcomeやsemester_dummyに含まれる年を調べ、covariatesデータの期間を他のデータに揃える
@@ -194,6 +201,10 @@ inner_join(gradrate7, covariates4, by = "unitid") %>%  pull(covariates4, var = "
 # (d) Master Dataの作成
 ## 1.semester_data, covariates_data, gradrate_dataを適切に結合
 ```{r}
+library(dplyr)
+```
+
+```{r}
 grad_cov <- inner_join(gradrate7, covariates4, by = c("unitid", "year"))
 grad_cov
 ```
@@ -201,6 +212,7 @@ grad_cov
 ```{r}
 sapply(semester_data_all2, class)
 ```
+
 
 ```{r}
 semester_data_all3 <- semester_data_all2 %>% mutate_at(c("unitid", "semester", "quarter", "year", "dummy"), as.double)
@@ -211,6 +223,7 @@ sapply(semester_data_all3, class)
 master_data <- inner_join(grad_cov, semester_data_all3, by = c("unitid", "year"))
 master_data
 ```
+
 ```{r}
 write.csv(master_data, "c:/ra-bootcamp/ra-bootcamp-warmup/cleaning")
 ```
@@ -219,9 +232,6 @@ write.csv(master_data, "c:/ra-bootcamp/ra-bootcamp-warmup/cleaning")
 ・(a)5. semester制が導入された年の列の作成
 ・(c)5. outcome_dataに含まれるunitidを特定し、covariatesに含まれるunitidをoutcomeデータに揃える
 ・(d)master_dataをcsvに保存する方法
-・どのようにgithubに提出するか
-
 ・sdとmeanを出力して綺麗に表にする方法
 
-# 質問したいことメモ
-・packageがダウンロードできない…
+
