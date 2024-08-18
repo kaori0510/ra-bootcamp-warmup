@@ -1,0 +1,227 @@
+---
+title: "Warm up_Cleaning_Kaori Goto"
+output: html_notebook
+---
+
+This is an [R Markdown](http://rmarkdown.rstudio.com) Notebook. When you execute code within the notebook, the results appear beneath the code. 
+
+Try executing this chunk by clicking the *Run* button within the chunk or by placing your cursor inside it and pressing *Cmd+Shift+Enter*. 
+
+# (a) Semester Dataの整形
+## 1. csv fileをダウンロードする
+
+```{r}
+semester_data_1 <-read.csv("/Users/kg/Desktop/RA Boot Camp/warmup training package/01_data/raw/semester_dummy/semester_data_1.csv", header = TRUE)
+```
+
+```{r}
+semester_data_1
+```
+
+```{r}
+semester_data_2 <- read.csv("/Users/kg/Desktop/RA Boot Camp/warmup training package/01_data/raw/semester_dummy/semester_data_2.csv")
+semester_data_2 
+```
+
+## 2. semester_data_1の1行目を列名にする
+```{r}
+semester_data_1_new <- semester_data_1
+colnames(semester_data_1_new) <- semester_data_1[1, ]
+semester_data_1_new
+```
+
+```{r}
+semester_data_1_new <- semester_data_1_new[-1, ]
+semester_data_1_new
+```
+## 3. semester_data_1とsemester_data_2の結合
+```{r}
+semester_data_2_new <- semester_data_2
+colnames(semester_data_2_new) <- semester_data_1[1, ]
+semester_data_2_new
+```
+
+
+```{r}
+semester_data_all <- rbind(semester_data_1_new, semester_data_2_new)
+semester_data_all
+```
+## 4. "Y"列の削除
+
+```{r}
+semester_data_all2 <- semester_data_all[c(1:5)]
+semester_data_all2
+```
+## 5. semester制が導入された年の列
+## 6. semester制導入後を示すダミー変数の作成
+
+```{r}
+install.packages("dplyr")
+library("dplyr")
+```
+
+```{r}
+semester_data_all2 <- semester_data_all2 %>%
+                       mutate(dummy=semester_data_all2$semester)
+semester_data_all2
+```
+
+# (b) Gradrate Dataの整形
+## 1. データの読み込みと結合
+
+```{r}
+library(readxl)
+files <- list.files(path = "/Users/kg/Desktop/RA Boot Camp/warmup training package/01_data/raw/outcome", pattern = "*.xlsx", full.names = T)
+gradrate <- sapply(files, read_excel, simplify=FALSE) %>% 
+            bind_rows(.id = "id")
+```
+
+idの列をなくす
+
+```{r}
+gradrate1 <- subset(gradrate, select = -c(id))
+```
+
+
+## 2. 女子学生の4年卒業率に0.01をかける
+
+```{r}
+gradrate2 <- transform(gradrate1, women_gradrate_4yr = women_gradrate_4yr*0.01)
+gradrate2
+```
+
+## 3. 男女合計の4年卒業率と男子学生の4年卒業率を計算
+### 男女合計
+
+型を確認する。
+```{r}
+sapply(gradrate2, class)
+```
+
+characterだと計算できないので、numericに変換する
+```{r}
+library(dplyr)
+gradrate3 <- gradrate2 %>% mutate_at(c('totcohortsize', 'm_4yrgrads'), as.numeric)
+gradrate3
+sapply(gradrate3, class)
+```
+変換できたので、計算する。
+
+```{r}
+gradrate4 <- transform(gradrate3, tot_gradrate_4yr = tot4yrgrads / totcohortsize)
+gradrate4
+```
+### 男子学生の4年卒業率
+```{r}
+gradrate5 <- transform(gradrate4, men_gradrate_4yr = m_4yrgrads / m_cohortsize)
+gradrate5
+```
+
+## 4. 計算した卒業率を有効数字3桁に調整
+```{r}
+gradrate6 <- gradrate5 %>% mutate_at(c("women_gradrate_4yr", "tot_gradrate_4yr", "men_gradrate_4yr"), signif, digits=3)
+gradrate6
+```
+
+```{r}
+gradrate7 <- gradrate6[which(gradrate6$year < 2011), ]
+gradrate7
+```
+
+
+# (c) Covariates Dataの整形
+## 1. データの読み込み
+
+```{r}
+covariates <- read_xlsx("/Users/kg/Desktop/RA Boot Camp/warmup training package/01_data/raw/covariates/covariates.xlsx")
+covariates
+```
+## 2.名前の変更
+
+```{r}
+colnames(covariates) <- c("unitid", "year", "category", "value")
+covariates
+```
+### 3. ’unitid’に含まれる”aaaa”という文字を削除
+
+```{r}
+covariates$unitid <- gsub("aaaa","",as.character(covariates$unitid))
+covariates
+```
+## 4. ‘category’列に含まれる’instatetuition’, ‘costs’, ’faculty’, ’white_cohortsize’を別の列として追加
+
+```{r}
+covariates2 <- spread(covariates, key = "category", value = "value")
+covariates2
+```
+
+## 5. outcomeやsemester_dummyに含まれる年を調べ、covariatesデータの期間を他のデータに揃える
+
+### outcomeに含まれる年
+
+```{r}
+unique(gradrate7$year)
+```
+
+### semester_dummyに含まれる年
+```{r}
+unique(semester_data_all2$year)
+```
+
+### covariatesデータの期間を他のデータに揃える
+```{r}
+unique(covariates2$year)
+```
+
+```{r}
+covariates3 <- covariates2[which(covariates2$year < 2011 & covariates2$year> 1990 & covariates2$ year != 1994), ]
+unique(covariates3$year)
+```
+
+## 6. outcome_dataに含まれるunitidを特定し、covariatesに含まれるunitidをoutcomeデータに揃える
+わかりませんでした。
+```{r}
+sapply(gradrate7, class)
+sapply(covariates3, class)
+```
+```{r}
+covariates4 <- covariates3 %>% mutate_all(as.double)
+sapply(covariates4, class)
+```
+```{r}
+inner_join(gradrate7, covariates4, by = "unitid") %>%  pull(covariates4, var = "year")
+```
+# (d) Master Dataの作成
+## 1.semester_data, covariates_data, gradrate_dataを適切に結合
+```{r}
+grad_cov <- inner_join(gradrate7, covariates4, by = c("unitid", "year"))
+grad_cov
+```
+結合するために型をそろえる。
+```{r}
+sapply(semester_data_all2, class)
+```
+
+```{r}
+semester_data_all3 <- semester_data_all2 %>% mutate_at(c("unitid", "semester", "quarter", "year", "dummy"), as.double)
+sapply(semester_data_all3, class)
+```
+
+```{r}
+master_data <- inner_join(grad_cov, semester_data_all3, by = c("unitid", "year"))
+master_data
+```
+```{r}
+write.csv(master_data, "c:/ra-bootcamp/ra-bootcamp-warmup/cleaning")
+```
+
+# わからなかったところメモ
+・(a)5. semester制が導入された年の列の作成
+・(c)5. outcome_dataに含まれるunitidを特定し、covariatesに含まれるunitidをoutcomeデータに揃える
+・(d)master_dataをcsvに保存する方法
+・どのようにgithubに提出するか
+
+・sdとmeanを出力して綺麗に表にする方法
+
+# 質問したいことメモ
+・packageがダウンロードできない…
